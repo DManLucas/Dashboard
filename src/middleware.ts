@@ -1,9 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server"; // Import NextResponse for custom redirection
+import { NextResponse } from "next/server";
 
 // Matchers for public and protected routes
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
-const isAgencyProtectedRoute = createRouteMatcher(["/agency(.*)"]);
 const isAdminProtectedRoute = createRouteMatcher(["/admin(.*)"]);
 const publicRoutes = [
   "/site",
@@ -15,12 +14,15 @@ const publicRoutes = [
 // Middleware
 export default clerkMiddleware(async (auth, request) => {
   const { pathname } = request.nextUrl;
+  const signInUrl =
+    process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/agency/sign-in";
+  const fallbackRedirectUrl =
+    process.env.NEXT_PUBLIC_CLERK_FALLBACK_REDIRECT_URL || "/site";
 
   try {
     console.log("Requested Path:", pathname);
     const { sessionClaims } = auth; // Extract session claims
     const userId = sessionClaims?.sub;
-    const roles = sessionClaims?.roles || [];
 
     console.log("User ID:", userId);
 
@@ -32,35 +34,27 @@ export default clerkMiddleware(async (auth, request) => {
       return;
     }
 
+    // Handle redirection for /agency
+    if (pathname === "/agency" && !userId) {
+      // Redirect to sign-in if user is not logged in
+      console.log("User not logged in. Redirecting to", signInUrl);
+      const redirectUrl = new URL(signInUrl, request.url);
+      return NextResponse.redirect(redirectUrl, 302);
+    }
+
     // Protect route if not public
     await auth.protect();
 
-    // Additional checks for agency and admin routes
-    if (isAgencyProtectedRoute(request)) {
-      if (!userId) {
-        // If user is not logged in, redirect to /agency/sign-up
-        console.log("User not logged in. Redirecting to /agency/sign-up.");
-        const redirectUrl = new URL("/agency/sign-up", request.url);
-        return NextResponse.redirect(redirectUrl, 302); // 302 for redirect
-      }
-
-      if (!roles.includes("agency")) {
-        // If user doesn't have agency role, redirect to /agency/sign-up
-        console.log(
-          "Access denied: Insufficient permissions for agency route."
-        );
-        const redirectUrl = new URL("/agency/sign-up", request.url);
-        return NextResponse.redirect(redirectUrl, 302); // 302 for redirect
-      }
-
-      console.log("Access granted to agency route:", pathname);
-    }
-
+    // Admin route check (unchanged)
     if (isAdminProtectedRoute(request)) {
       if (!userId) {
-        throw new Error("Unauthorized access");
+        // If user is not logged in, redirect to the fallback redirect URL
+        console.log("User not logged in. Redirecting to", fallbackRedirectUrl);
+        const redirectUrl = new URL(fallbackRedirectUrl, request.url);
+        return NextResponse.redirect(redirectUrl, 302);
       }
 
+      const roles = sessionClaims?.roles || [];
       if (!roles.includes("admin")) {
         console.log("Access denied: Insufficient admin permissions.");
         throw new Error("Forbidden access");
@@ -79,9 +73,7 @@ export default clerkMiddleware(async (auth, request) => {
 // Configuration
 export const config = {
   matcher: [
-    // Skip Next.js internals and static files unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
     "/(api|trpc)(.*)",
   ],
 };
