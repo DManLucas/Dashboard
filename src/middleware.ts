@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server"; // Import NextResponse for custom redirection
 
 // Matchers for public and protected routes
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
@@ -37,12 +38,19 @@ export default clerkMiddleware(async (auth, request) => {
     // Additional checks for agency and admin routes
     if (isAgencyProtectedRoute(request)) {
       if (!userId) {
-        throw new Error("Unauthorized access");
+        // If user is not logged in, redirect to /agency/sign-up
+        console.log("User not logged in. Redirecting to /agency/sign-up.");
+        const redirectUrl = new URL("/agency/sign-up", request.url);
+        return NextResponse.redirect(redirectUrl, 302); // 302 for redirect
       }
 
       if (!roles.includes("agency")) {
-        console.log("Access denied: Insufficient permissions.");
-        throw new Error("Forbidden access");
+        // If user doesn't have agency role, redirect to /agency/sign-up
+        console.log(
+          "Access denied: Insufficient permissions for agency route."
+        );
+        const redirectUrl = new URL("/agency/sign-up", request.url);
+        return NextResponse.redirect(redirectUrl, 302); // 302 for redirect
       }
 
       console.log("Access granted to agency route:", pathname);
