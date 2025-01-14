@@ -1,3 +1,5 @@
+import { Card } from "@/components/ui/card";
+import { pricingCards } from "@/lib/constants";
 import Image from "next/image";
 
 export default async function Home() {
@@ -37,6 +39,19 @@ export default async function Home() {
             className="bottom-0 top-[50%] bg-gradient-to-t dark:from-background 
 left-0 right-0 absolute z-10"
           ></div>
+        </div>
+      </section>
+      <section className="flex justify-center items-center flex-col gap-4 md:mt-200">
+        <h2 className="text-4xl text-center">Pick one that works for you</h2>
+        <p className="text-muted-foreground text-center">
+          Our straightforward pricing plans are tailored to meet your needs. if{" "}
+          {"you're"} not <br />
+          ready to commit you can get started for free
+        </p>
+        <div className="flex items-center gap-4 flex-wrap mt-6">
+          {pricingCards.map((card) => (
+            <Card key={card.title}>{card.title}</Card>
+          ))}
         </div>
       </section>
     </>
