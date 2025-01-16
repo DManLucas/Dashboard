@@ -1,14 +1,12 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { pricingCards } from "@/lib/constants";
 import Image from "next/image";
+import clsx from "clsx";
 
 export default async function Home() {
   return (
     <>
-      <section
-        className="h-full w-full pt-36 relative flex 
-        items-center justify-center flex-col "
-      >
+      <section className="h-full w-full md:pt-44 mt-[-70px] relative flex items-center justify-center flex-col">
         {}
         <div
           className="absolute bottom-0 left-0 right-0 top-0 
@@ -48,9 +46,26 @@ left-0 right-0 absolute z-10"
           {"you're"} not <br />
           ready to commit you can get started for free
         </p>
-        <div className="flex items-center gap-4 flex-wrap mt-6">
+        <div className="flex items-center justify-center gap-4 flex-wrap mt-6">
           {pricingCards.map((card) => (
-            <Card key={card.title}>{card.title}</Card>
+            <Card
+              key={card.title}
+              className={clsx("w-[300px] flex flex-col justify-between", {
+                "border-2 border-primary": card.title === "Unlimited Saas",
+              })}
+            >
+              <CardHeader>
+                <CardTitle
+                  className={clsx("", {
+                    "text-muted-foreground": card.title !== "Unlimited Saas",
+                  })}
+                >
+                  {card.title}
+                </CardTitle>
+                <CardDescription>{card.description}</CardDescription>
+              </CardHeader>
+              {card.description}
+            </Card>
           ))}
         </div>
       </section>
